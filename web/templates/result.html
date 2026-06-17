@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalog Importer — Result</title>
+  <style>
+    :root { --ink:#1f2733; --muted:#697686; --line:#e3e7ee; --brand:#1f7a5a; --bg:#f6f8f7; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink);
+      font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif; }
+    .wrap { max-width:900px; margin:0 auto; padding:48px 20px; }
+    .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:19px; }
+    .logo .mark { width:28px; height:28px; border-radius:8px; background:var(--brand);
+      color:#fff; display:grid; place-items:center; font-size:15px; }
+    h1 { font-size:23px; margin:22px 0 18px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+    .stat .n { font-size:26px; font-weight:700; }
+    .stat .l { font-size:13px; color:var(--muted); }
+    .stat.warn .n { color:#b3261e; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px;
+      margin-bottom:18px; }
+    .card h2 { font-size:15px; margin:0 0 14px; }
+    table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th { color:var(--muted); font-weight:600; }
+    .scroll { overflow-x:auto; }
+    .dl { display:inline-block; background:var(--brand); color:#fff; padding:12px 20px;
+      border-radius:10px; font-weight:600; text-decoration:none; }
+    .back { color:var(--muted); text-decoration:none; margin-left:14px; }
+    .drop-reason { color:#b3261e; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo"><span class="mark">⇪</span> Catalog Importer</div>
+    <h1>Your import file is ready</h1>
+
+    <div class="stats">
+      <div class="stat"><div class="n">{{ report.input_rows }}</div><div class="l">rows read</div></div>
+      <div class="stat"><div class="n">{{ report.output_rows }}</div><div class="l">ready to import</div></div>
+      <div class="stat {{ 'warn' if report.dropped }}"><div class="n">{{ report.dropped|length }}</div><div class="l">skipped</div></div>
+    </div>
+
+    <a class="dl" href="{{ data_uri }}" download="{{ filename }}">Download {{ filename }}</a>
+    <a class="back" href="/">Convert another file</a>
+
+    {% if mode == 'sale' %}
+    <p style="color:var(--muted);font-size:13.5px">Imported on-sale items only. {{ report.excluded_not_on_sale }} non-sale products were left out.</p>
+    {% endif %}
+
+    {% if report.dropped %}
+    <div class="card" style="margin-top:20px">
+      <h2>Skipped rows ({{ report.dropped|length }})</h2>
+      <div class="scroll"><table>
+        <tr><th>Row</th><th>Item</th><th>Reason</th></tr>
+        {% for row_num, ident, reason in report.dropped %}
+        <tr><td>{{ row_num }}</td><td>{{ ident }}</td><td class="drop-reason">{{ reason }}</td></tr>
+        {% endfor %}
+      </table></div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h2>Preview (first {{ preview|length }} of {{ report.output_rows }})</h2>
+      <div class="scroll"><table>
+        <tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr>
+        {% for rec in preview %}
+        <tr>{% for c in columns %}<td>{{ rec[c] }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </table></div>
+    </div>
+  </div>
+</body>
+</html>

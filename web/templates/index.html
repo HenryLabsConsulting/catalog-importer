@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalog Importer</title>
+  <style>
+    :root { --ink:#1f2733; --muted:#697686; --line:#e3e7ee; --brand:#1f7a5a; --bg:#f6f8f7; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink);
+      font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif; }
+    .wrap { max-width:620px; margin:0 auto; padding:56px 20px; }
+    .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; }
+    .logo .mark { width:30px; height:30px; border-radius:8px; background:var(--brand);
+      color:#fff; display:grid; place-items:center; font-size:16px; }
+    h1 { font-size:26px; margin:26px 0 6px; letter-spacing:-0.01em; }
+    p.lead { color:var(--muted); margin:0 0 28px; line-height:1.55; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px;
+      box-shadow:0 1px 3px rgba(20,30,45,.06); }
+    label.field { display:block; font-weight:600; font-size:14px; margin-bottom:8px; }
+    .drop { border:2px dashed #cfd6e0; border-radius:12px; padding:26px; text-align:center;
+      color:var(--muted); cursor:pointer; }
+    .drop input { display:block; margin:10px auto 0; }
+    .modes { display:flex; gap:12px; margin:22px 0 24px; }
+    .mode { flex:1; border:1px solid var(--line); border-radius:10px; padding:14px;
+      cursor:pointer; }
+    .mode input { margin-right:8px; }
+    .mode b { display:block; font-size:14px; }
+    .mode span { font-size:12.5px; color:var(--muted); }
+    button { width:100%; padding:13px; border:0; border-radius:10px; background:var(--brand);
+      color:#fff; font-size:15px; font-weight:600; cursor:pointer; }
+    .err { background:#fdecea; color:#b3261e; border:1px solid #f4c7c2; border-radius:10px;
+      padding:12px 14px; margin-bottom:18px; font-size:14px; }
+    .foot { color:var(--muted); font-size:13px; margin-top:18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo"><span class="mark">⇪</span> Catalog Importer</div>
+    <h1>Turn a supplier sheet into a clean import file</h1>
+    <p class="lead">Upload your product spreadsheet. The tool maps it to the store's import format, fixes prices and URLs, fills in defaults, and tells you about any rows it had to skip.</p>
+
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+    <form class="card" action="/convert" method="post" enctype="multipart/form-data">
+      <label class="field">Product spreadsheet (CSV)</label>
+      <label class="drop">
+        Choose a CSV file
+        <input type="file" name="file" accept=".csv" required>
+      </label>
+
+      <div class="modes">
+        <label class="mode"><input type="radio" name="mode" value="all" checked>
+          <b>Full catalog</b><span>Import every valid product.</span></label>
+        <label class="mode"><input type="radio" name="mode" value="sale">
+          <b>Sale items only</b><span>Import just the on-sale products.</span></label>
+      </div>
+
+      <button type="submit">Convert to import file</button>
+      <div class="foot">Nothing is stored. The file is converted in memory and handed straight back to you.</div>
+    </form>
+  </div>
+</body>
+</html>
