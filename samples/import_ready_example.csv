@@ -1,0 +1,13 @@
+sku,name,price,category,url_slug,stock,weight,available,description
+SKU-1001,"Copper Compression Fitting 1/2""",12.99,Plumbing > Fittings,copper-compression-fitting-1-2,42,0.20,Yes,Lead-free copper fitting.
+1002,PEX Crimp Ring (bag of 100),8.50,Plumbing > Fittings,pex-crimp-ring-bag-of-100,0,0.50,No,Stainless crimp rings
+1003,"Ball Valve, Brass 3/4""",19.00,Plumbing > Valves,ball-valve-brass-3-4,0,0.60,No,Full port brass ball valve
+SKU-1004,Thread Seal Tape,1.29,Plumbing > Accessories,thread-seal-tape,500,0.05,Yes,PTFE tape
+1005,Pipe Wrench 14in,34.95,Tools,pipe-wrench-14in,12,2.10,Yes,Heavy duty pipe wrench
+1008,Adjustable Wrench Set,42.00,Tools,adjustable-wrench-set,8,3.40,Yes,"3-piece set, chrome"
+1009,Teflon Pipe Dope,6.49,Plumbing > Accessories,teflon-pipe-dope,0,0.30,No,& sealant compound
+1010,Push-Fit Coupling 1/2in,7.75,Plumbing > Fittings,push-fit-coupling-1-2in,130,0.15,Yes,Quick connect coupling
+1012,"Compression Sleeve 3/8""",0.89,Plumbing > Fittings,compression-sleeve-3-8,800,0.02,Yes,Brass sleeve
+1013,Drain Auger 25ft,58.00,Tools,drain-auger-25ft,6,4.80,Yes,Manual drum auger
+1014,Faucet Aerator,3.49,Plumbing > Accessories,faucet-aerator,210,0.04,Yes,Dual thread aerator
+1015,P-Trap 1-1/2in,11.25,Plumbing > Drains,p-trap-1-1-2in,75,0.40,Yes,ABS p-trap with washers
