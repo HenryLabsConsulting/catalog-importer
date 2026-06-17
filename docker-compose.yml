@@ -1,0 +1,6 @@
+# Run the tool with one command, then open http://localhost:8090
+services:
+  app:
+    build: .
+    ports:
+      - "8090:8090"

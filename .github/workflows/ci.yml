@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tooling
+        run: pip install ruff pytest flask
+
+      - name: Lint
+        run: ruff check importer web
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: CLI smoke test on the sample file
+        run: |
+          python -m importer.cli samples/supplier_products_messy.csv --out /tmp/out.csv
+          head -1 /tmp/out.csv | grep -q "sku,name,price"
+          test "$(wc -l < /tmp/out.csv)" -gt 1
