@@ -35,7 +35,10 @@ def do_convert():
         return render_template("index.html", error="Please choose a CSV file."), 400
 
     text = upload.read().decode("utf-8-sig", errors="replace")
-    rows = list(csv.reader(io.StringIO(text)))
+    try:
+        rows = list(csv.reader(io.StringIO(text)))
+    except csv.Error as exc:
+        return render_template("index.html", error=f"That file is not valid CSV: {exc}"), 400
     if not rows:
         return render_template("index.html", error="That file looks empty."), 400
 

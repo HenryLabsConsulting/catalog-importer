@@ -13,8 +13,11 @@ from .convert import convert, to_csv_rows
 
 def run(in_path: str, out_path: str, mode: str) -> int:
     with open(in_path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.reader(f)
-        rows = list(reader)
+        try:
+            rows = list(csv.reader(f))
+        except csv.Error as exc:
+            print(f"Input is not valid CSV: {exc}", file=sys.stderr)
+            return 1
     if not rows:
         print("Input file is empty.", file=sys.stderr)
         return 1
