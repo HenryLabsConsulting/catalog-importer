@@ -6,7 +6,7 @@ E-commerce platforms want product data in an exact format. Supplier exports neve
 
 It runs on a small sample catalog, so you can try it in a minute.
 
-![Catalog Importer result screen](docs/ui-preview.svg)
+![Catalog Importer result screen](docs/catalog_importer_webui.png)
 
 ## What it does
 
