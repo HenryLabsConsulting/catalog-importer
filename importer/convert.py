@@ -166,7 +166,7 @@ def convert(header: list[str], rows: list[list[str]], mode: str = "all") -> tupl
 
 def to_csv_rows(records: list[dict]) -> list[list[str]]:
     """Header plus one row per record, in the platform's column order."""
-    yield_rows = [list(TARGET_COLUMNS)]
+    rows = [list(TARGET_COLUMNS)]
     for rec in records:
-        yield_rows.append([rec[c] for c in TARGET_COLUMNS])
-    return yield_rows
+        rows.append([rec[c] for c in TARGET_COLUMNS])
+    return rows
