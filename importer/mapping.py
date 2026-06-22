@@ -22,7 +22,6 @@ HEADER_ALIASES = {
     "title": "name",
     "retail price": "price",
     "price": "price",
-    "cost": "price",
     "unit price": "price",
     "category": "category",
     "cat": "category",
