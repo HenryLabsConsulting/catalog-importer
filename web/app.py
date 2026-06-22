@@ -31,6 +31,8 @@ def index():
 def do_convert():
     upload = request.files.get("file")
     mode = request.form.get("mode", "all")
+    if mode not in ("all", "sale"):
+        mode = "all"
     if not upload or not upload.filename:
         return render_template("index.html", error="Please choose a CSV file."), 400
 
