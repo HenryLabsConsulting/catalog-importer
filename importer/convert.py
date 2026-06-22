@@ -13,7 +13,7 @@ from .mapping import HEADER_ALIASES, REQUIRED_INPUT, TARGET_COLUMNS
 from .slug import slugify
 
 _TAGS = re.compile(r"<[^>]+>")
-_PRICE_JUNK = re.compile(r"[^0-9.\-]")
+_CURRENCY_JUNK = re.compile(r"[^0-9.,\-]")
 _TRUTHY = {"y", "yes", "true", "1", "on"}
 
 
@@ -46,9 +46,42 @@ def clean_text(value: str) -> str:
 
 
 def parse_price(value: str):
-    cleaned = _PRICE_JUNK.sub("", value or "")
-    if not cleaned or cleaned in ("-", ".", "-."):
+    raw = value or ""
+    # Reject scientific notation outright. "3.0e2" would otherwise be stripped
+    # to "3.02" (silent money corruption) or, if parsed by float(), read as 300.
+    # Plain currency codes like "USD 8.50" have no "e" next to a digit and are
+    # still handled by stripping junk below.
+    if re.search(r"\de", raw, re.IGNORECASE) or re.search(r"e\d", raw, re.IGNORECASE):
         return None
+
+    cleaned = _CURRENCY_JUNK.sub("", raw)
+    if not cleaned or cleaned in ("-", ".", "-.", ","):
+        return None
+
+    has_dot = "." in cleaned
+    has_comma = "," in cleaned
+
+    if has_dot and has_comma:
+        # Both separators present. Only US grouping ("1,299.00": comma before a
+        # dot decimal) is unambiguous, so we accept it. The reverse European
+        # form ("1.299,00") is ambiguous, so we drop the row and let the caller
+        # flag it rather than silently corrupt the price.
+        if cleaned.rfind(".") > cleaned.rfind(","):
+            cleaned = cleaned.replace(",", "")
+        else:
+            return None
+    elif has_comma:
+        # Only commas: a trailing ",dd" group is a decimal comma (European);
+        # anything else is thousands grouping and is removed.
+        if re.search(r",\d{1,2}$", cleaned):
+            cleaned = cleaned.replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+
+    # A clean amount has at most one decimal point.
+    if cleaned.count(".") > 1:
+        return None
+
     try:
         price = float(cleaned)
     except ValueError:
@@ -57,8 +90,19 @@ def parse_price(value: str):
 
 
 def coerce_stock(value: str) -> int:
-    digits = re.sub(r"[^0-9]", "", value or "")
-    return int(digits) if digits else 0
+    raw = (value or "").strip()
+    if not raw:
+        return 0
+    # Parse as a real number so decimals and scientific notation are read
+    # correctly (e.g. "3.5" is 3, not 35), then floor to whole units. A leading
+    # minus is honored and clamped to 0 so out-of-stock never reads as available.
+    try:
+        amount = float(raw)
+    except ValueError:
+        return 0
+    if amount != amount:  # NaN guard
+        return 0
+    return max(0, int(amount))
 
 
 def normalize_sku(value: str) -> str:
