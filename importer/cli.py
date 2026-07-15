@@ -6,24 +6,33 @@
 
 import argparse
 import csv
+import io
 import sys
 
-from .convert import convert, to_csv_rows
+from .convert import convert, decode_upload, to_csv_rows
 
 
 def run(in_path: str, out_path: str, mode: str) -> int:
-    with open(in_path, newline="", encoding="utf-8-sig") as f:
-        try:
-            rows = list(csv.reader(f))
-        except csv.Error as exc:
-            print(f"Input is not valid CSV: {exc}", file=sys.stderr)
-            return 1
+    with open(in_path, "rb") as f:
+        raw = f.read()
+    # Same graceful decoding the web app uses: try UTF-8 first, then fall
+    # back to Windows-1252/Latin-1 so a non-UTF-8 supplier export (common
+    # from Excel) never crashes the CLI with a raw traceback.
+    text, decode_warning = decode_upload(raw)
+
+    try:
+        rows = list(csv.reader(io.StringIO(text)))
+    except csv.Error as exc:
+        print(f"Input is not valid CSV: {exc}", file=sys.stderr)
+        return 1
     if not rows:
         print("Input file is empty.", file=sys.stderr)
         return 1
 
     header, data = rows[0], rows[1:]
     records, report = convert(header, data, mode=mode)
+    if decode_warning:
+        report.warnings.append(decode_warning)
 
     if report.missing_required:
         print("Could not map required columns: " + ", ".join(report.missing_required),
@@ -35,6 +44,9 @@ def run(in_path: str, out_path: str, mode: str) -> int:
         csv.writer(f).writerows(to_csv_rows(records))
 
     print(f"Read {report.input_rows} rows, wrote {report.output_rows} to {out_path}.")
+    if report.warnings:
+        for w in report.warnings:
+            print(f"Warning: {w}")
     if mode == "sale":
         print(f"Excluded {report.excluded_not_on_sale} rows that were not on sale.")
     if report.unmapped_headers:

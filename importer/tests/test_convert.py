@@ -3,6 +3,7 @@
 from importer.convert import (
     coerce_stock,
     convert,
+    decode_upload,
     detect_columns,
     normalize_sku,
     parse_price,
@@ -170,3 +171,28 @@ def test_convert_drops_and_flags_infinite_stock_without_crashing():
     assert records[0]["sku"] == "1002"
     assert len(report.dropped) == 1
     assert "unusable stock" in report.dropped[0][2]
+
+
+def test_decode_upload_passes_through_clean_utf8():
+    text, warning = decode_upload("café, naïve".encode("utf-8-sig"))
+    assert text == "café, naïve"
+    assert warning is None
+
+
+def test_decode_upload_falls_back_to_cp1252_and_warns():
+    # Smart quotes and an em dash: valid Windows-1252 bytes, invalid UTF-8.
+    original = "“Hello—World”"
+    raw = original.encode("cp1252")
+    text, warning = decode_upload(raw)
+    assert text == original
+    assert warning is not None
+    assert "Windows-1252" in warning
+
+
+def test_decode_upload_never_raises_on_arbitrary_bytes():
+    # Bytes invalid in both UTF-8 and cp1252 must still decode via the
+    # Latin-1 backstop rather than raising UnicodeDecodeError.
+    raw = bytes([0x81, 0x8D, 0x90])  # undefined in cp1252
+    text, warning = decode_upload(raw)
+    assert isinstance(text, str)
+    assert warning is not None

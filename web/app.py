@@ -16,7 +16,7 @@ from pathlib import Path
 from flask import Flask, render_template, request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from importer.convert import convert, to_csv_rows  # noqa: E402
+from importer.convert import convert, decode_upload, to_csv_rows  # noqa: E402
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB cap
@@ -36,7 +36,10 @@ def do_convert():
     if not upload or not upload.filename:
         return render_template("index.html", error="Please choose a CSV file."), 400
 
-    text = upload.read().decode("utf-8-sig", errors="replace")
+    # Same graceful decoding the CLI uses: try UTF-8 first, then fall back
+    # to Windows-1252/Latin-1 (a common Excel export encoding) instead of
+    # silently mangling product names into replacement characters.
+    text, decode_warning = decode_upload(upload.read())
     try:
         rows = list(csv.reader(io.StringIO(text)))
     except csv.Error as exc:
@@ -45,6 +48,8 @@ def do_convert():
         return render_template("index.html", error="That file looks empty."), 400
 
     records, report = convert(rows[0], rows[1:], mode=mode)
+    if decode_warning:
+        report.warnings.append(decode_warning)
     if report.missing_required:
         msg = ("Could not find these required columns: "
                + ", ".join(report.missing_required)

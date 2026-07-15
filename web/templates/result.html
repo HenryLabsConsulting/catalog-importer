@@ -30,6 +30,8 @@
       border-radius:10px; font-weight:600; text-decoration:none; }
     .back { color:var(--muted); text-decoration:none; margin-left:14px; }
     .drop-reason { color:#b3261e; }
+    .warn-list { margin:0; padding-left:18px; color:#8a5a00; font-size:13.5px; }
+    .warn-list li { margin-bottom:4px; }
   </style>
 </head>
 <body>
@@ -48,6 +50,17 @@
 
     {% if mode == 'sale' %}
     <p style="color:var(--muted);font-size:13.5px">Imported on-sale items only. {{ report.excluded_not_on_sale }} non-sale products were left out.</p>
+    {% endif %}
+
+    {% if report.warnings %}
+    <div class="card" style="margin-top:20px">
+      <h2>Warnings</h2>
+      <ul class="warn-list">
+        {% for w in report.warnings %}
+        <li>{{ w }}</li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endif %}
 
     {% if report.dropped %}

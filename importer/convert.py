@@ -26,6 +26,7 @@ class Report:
     dropped: list = field(default_factory=list)   # (row_number, sku_or_name, reason)
     unmapped_headers: list = field(default_factory=list)
     missing_required: list = field(default_factory=list)
+    warnings: list = field(default_factory=list)  # non-fatal issues, e.g. encoding fallback
 
 
 def detect_columns(header: list[str]) -> tuple[dict, list[str]]:
@@ -148,6 +149,44 @@ def coerce_stock(value: str) -> int | None:
     if not math.isfinite(amount):  # inf / -inf guard
         return None
     return max(0, int(amount))
+
+
+def decode_upload(data: bytes) -> tuple[str, str | None]:
+    """Decode uploaded file bytes, tolerating non-UTF-8 supplier exports.
+
+    Tries UTF-8 (honoring a BOM) first since that's the modern default.
+    Falls back to cp1252 -- which covers the curly quotes and em dashes a
+    Windows/Excel export commonly produces -- so a single non-UTF-8 file
+    never crashes the run and never silently mangles product names either.
+    A last-resort Latin-1 decode (which can't itself fail) backstops the
+    handful of byte values undefined in cp1252.
+
+    Returns (text, warning). warning is None when the file was clean UTF-8;
+    otherwise it's a message describing the fallback so the caller can
+    surface it in the Report instead of staying silent.
+    """
+    try:
+        return data.decode("utf-8-sig"), None
+    except UnicodeDecodeError:
+        pass
+
+    try:
+        text = data.decode("cp1252")
+        return text, (
+            "File was not valid UTF-8; decoded as Windows-1252 instead. "
+            "Check the source encoding if any characters look wrong."
+        )
+    except UnicodeDecodeError:
+        text = data.decode("latin-1", errors="replace")
+        bad = text.count("�")
+        if bad:
+            warning = (
+                f"{bad} character(s) could not be decoded and were replaced "
+                "with � -- check the source encoding."
+            )
+        else:
+            warning = "File was not valid UTF-8; decoded as Latin-1 as a fallback."
+        return text, warning
 
 
 def normalize_sku(value: str) -> str:
