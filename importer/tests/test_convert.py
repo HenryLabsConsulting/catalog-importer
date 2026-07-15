@@ -53,6 +53,34 @@ def test_coerce_stock_clamps_negative_to_zero():
     assert coerce_stock("-0.5") == 0
 
 
+def test_coerce_stock_handles_comma_grouped_values():
+    # B36: "1,000" must not fail to parse and silently default to 0 --
+    # that reads a fully-stocked item as out of stock.
+    assert coerce_stock("1,000") == 1000
+    assert coerce_stock("42,500") == 42500
+    # Comma thousands + dot decimal (US grouping), same disambiguation
+    # parse_price uses.
+    assert coerce_stock("2,500.75") == 2500
+
+
+def test_coerce_stock_ambiguous_separators_returns_none():
+    # Reversed European form ("1.299,00") is genuinely ambiguous -- don't
+    # guess. The caller (convert()) drops and flags the row instead of
+    # silently writing a stock level that might be wrong.
+    assert coerce_stock("1.299,00") is None
+
+
+def test_coerce_stock_handles_infinite_without_crashing():
+    # B37: int(float('inf')) raises OverflowError uncaught upstream of this
+    # function. coerce_stock must never raise; it returns None so the row
+    # is dropped and flagged rather than crashing the whole batch.
+    assert coerce_stock("inf") is None
+    assert coerce_stock("Infinity") is None
+    assert coerce_stock("-inf") is None
+    # NaN keeps its pre-existing behavior: treated as 0, not dropped.
+    assert coerce_stock("nan") == 0
+
+
 def test_dropped_ambiguous_price_is_flagged_in_report():
     rows = [
         ["1001", "Euro Priced", "1.299,00", "Tools", "5", "0.2", "x", "no"],
@@ -119,3 +147,26 @@ def test_missing_required_column_is_reported():
     records, report = convert(bad_header, [["x", "1.0"]], mode="all")
     assert records == []
     assert "sku" in report.missing_required
+
+
+def test_convert_preserves_comma_grouped_stock():
+    rows = [
+        ["1001", "Bulk Screws", "9.99", "Hardware", "1,000", "5", "box of screws", "no"],
+    ]
+    records, report = convert(HEADER, rows, mode="all")
+    assert report.output_rows == 1
+    assert report.dropped == []
+    assert records[0]["stock"] == "1000"
+    assert records[0]["available"] == "Yes"
+
+
+def test_convert_drops_and_flags_infinite_stock_without_crashing():
+    rows = [
+        ["1001", "Bad Stock Row", "9.99", "Hardware", "inf", "5", "x", "no"],
+        ["1002", "Good Row", "5.00", "Hardware", "10", "1", "x", "no"],
+    ]
+    records, report = convert(HEADER, rows, mode="all")
+    assert report.output_rows == 1
+    assert records[0]["sku"] == "1002"
+    assert len(report.dropped) == 1
+    assert "unusable stock" in report.dropped[0][2]
