@@ -114,6 +114,17 @@ def test_detect_columns_maps_aliases():
     assert unmapped == []
 
 
+def test_detect_columns_duplicate_alias_reported_as_unmapped():
+    # B39: a second header that aliases the same canonical field must appear in
+    # unmapped_headers so the report surfaces it, not be silently discarded.
+    header = ["Item #", "SKU", "Product Name", "Retail Price"]
+    cols, unmapped = detect_columns(header)
+    assert cols["sku"] == 0        # first claimant wins
+    assert "SKU" in unmapped       # duplicate goes to unmapped, not dropped silently
+    assert "name" in cols
+    assert "price" in cols
+
+
 def test_convert_full_catalog_drops_bad_rows():
     rows = [
         ["sku 1001", "Copper Fitting", "$12.99", "Plumbing > Fittings", "42", "0.2", "<p>Lead free</p>", "no"],

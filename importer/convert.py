@@ -38,7 +38,7 @@ def detect_columns(header: list[str]) -> tuple[dict, list[str]]:
         field_name = HEADER_ALIASES.get(key)
         if field_name and field_name not in mapping:
             mapping[field_name] = i
-        elif not field_name:
+        else:
             unmapped.append(raw)
     return mapping, unmapped
 
