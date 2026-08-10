@@ -44,7 +44,13 @@ def detect_columns(header: list[str]) -> tuple[dict, list[str]]:
 
 
 def clean_text(value: str) -> str:
-    return html.unescape(_TAGS.sub("", value)).strip()
+    text = value
+    while True:
+        step = _TAGS.sub("", html.unescape(text))
+        if step == text:
+            break
+        text = step
+    return text.strip()
 
 
 def _clean_numeric(raw: str) -> str | None:

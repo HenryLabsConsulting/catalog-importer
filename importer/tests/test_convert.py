@@ -1,6 +1,7 @@
 """Tests for the conversion engine and slug generation."""
 
 from importer.convert import (
+    clean_text,
     coerce_stock,
     convert,
     decode_upload,
@@ -207,3 +208,15 @@ def test_decode_upload_never_raises_on_arbitrary_bytes():
     text, warning = decode_upload(raw)
     assert isinstance(text, str)
     assert warning is not None
+
+
+def test_clean_text_strips_entity_encoded_tags():
+    # B40: entity-encoded tags must not survive into output.
+    # Old order (strip-then-unescape) left &lt;script&gt; as literal <script>.
+    assert clean_text("&lt;b&gt;Bold&lt;/b&gt;") == "Bold"
+    assert clean_text("&lt;script&gt;alert(1)&lt;/script&gt;") == "alert(1)"
+    # Double-encoded entities should also be collapsed away.
+    assert clean_text("&amp;lt;b&amp;gt;hi&amp;lt;/b&amp;gt;") == "hi"
+    # Plain HTML tags and normal ampersand entities still work.
+    assert clean_text("<p>Hello &amp; World</p>") == "Hello & World"
+    assert clean_text("<p>Lead free</p>") == "Lead free"
