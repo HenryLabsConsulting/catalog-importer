@@ -1,6 +1,7 @@
 """Tests for the conversion engine and slug generation."""
 
 from importer.convert import (
+    _csv_safe,
     clean_text,
     coerce_stock,
     convert,
@@ -8,6 +9,7 @@ from importer.convert import (
     detect_columns,
     normalize_sku,
     parse_price,
+    to_csv_rows,
 )
 from importer.slug import slugify
 
@@ -208,6 +210,41 @@ def test_decode_upload_never_raises_on_arbitrary_bytes():
     text, warning = decode_upload(raw)
     assert isinstance(text, str)
     assert warning is not None
+
+
+def test_csv_safe_prefixes_formula_chars():
+    # B41: values starting with =, +, -, @ must be prefixed with ' so Excel
+    # does not interpret them as formulas.
+    assert _csv_safe("=SUM(A1)") == "'=SUM(A1)"
+    assert _csv_safe("+123") == "'+123"
+    assert _csv_safe("-cmd|'/C calc'!A0") == "'-cmd|'/C calc'!A0"
+    assert _csv_safe("@SUM(1+1)") == "'@SUM(1+1)"
+    # Safe values pass through unchanged.
+    assert _csv_safe("SKU-1001") == "SKU-1001"
+    assert _csv_safe("12.99") == "12.99"
+    assert _csv_safe("") == ""
+
+
+def test_to_csv_rows_guards_formula_injection():
+    records = [
+        {
+            "sku": "=DANGEROUS",
+            "name": "+Exploit",
+            "price": "9.99",
+            "category": "Tools",
+            "url_slug": "exploit",
+            "stock": "5",
+            "weight": "0.20",
+            "available": "Yes",
+            "description": "-formula",
+        }
+    ]
+    rows = to_csv_rows(records)
+    data_row = rows[1]
+    assert data_row[0] == "'=DANGEROUS"   # sku
+    assert data_row[1] == "'+Exploit"     # name
+    assert data_row[2] == "9.99"          # price (safe, no prefix)
+    assert data_row[8] == "'-formula"     # description
 
 
 def test_clean_text_strips_entity_encoded_tags():

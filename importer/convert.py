@@ -259,9 +259,17 @@ def convert(header: list[str], rows: list[list[str]], mode: str = "all") -> tupl
     return out, report
 
 
+_FORMULA_CHARS = frozenset("=+-@")
+
+
+def _csv_safe(value: str) -> str:
+    """Prefix a single quote on values that Excel would interpret as a formula."""
+    return "'" + value if value and value[0] in _FORMULA_CHARS else value
+
+
 def to_csv_rows(records: list[dict]) -> list[list[str]]:
     """Header plus one row per record, in the platform's column order."""
     rows = [list(TARGET_COLUMNS)]
     for rec in records:
-        rows.append([rec[c] for c in TARGET_COLUMNS])
+        rows.append([_csv_safe(rec[c]) for c in TARGET_COLUMNS])
     return rows
